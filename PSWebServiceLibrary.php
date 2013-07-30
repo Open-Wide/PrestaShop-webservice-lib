@@ -40,6 +40,9 @@ class PrestaShopWebservice
 	
 	/** @var boolean is debug activated */
 	protected $debug;
+    
+    /** @var string SSL certificate path */
+    protected $SSLCertificatePath;
 	
 	/** @var array compatible versions of PrestaShop Webservice */
 	const psCompatibleVersionsMin = '1.4.0.17';
@@ -110,7 +113,15 @@ class PrestaShopWebservice
 		);
 		
 		$session = curl_init($url);
-
+        
+        if( $this->SSLCertificatePath) {
+            $defaultParams[CURLOPT_VERBOSE] = TRUE;
+            $defaultParams[CURLOPT_CERTINFO] = TRUE;
+            $defaultParams[CURLOPT_PROTOCOLS] = CURLPROTO_HTTPS;
+            $defaultParams[CURLOPT_SSL_VERIFYPEER] = TRUE;
+            $defaultParams[CURLOPT_SSL_VERIFYHOST] = 2;
+            $defaultParams[CURLOPT_CAINFO] = getcwd() . '/' . $this->SSLCertificatePath;
+        }
 		$curl_options = array();
 		foreach ($defaultParams as $defkey => $defval)
 		{
@@ -128,7 +139,7 @@ class PrestaShopWebservice
 
 		$index = strpos($response, "\r\n\r\n");
 		if ($index === false && $curl_params[CURLOPT_CUSTOMREQUEST] != 'HEAD')
-			throw new PrestaShopWebserviceException('Bad HTTP response');
+			throw new PrestaShopWebserviceException('Bad HTTP response : '. curl_error($session));
 		
 		$header = substr($response, 0, $index);
 		$body = substr($response, $index + 4);
@@ -371,7 +382,21 @@ class PrestaShopWebservice
 		self::checkStatusCode($request['status_code']);// check the response validity
 		return true;
 	}
-	
+    
+    /**
+     * Return $SSLCertificatePath attribute
+     */
+    public function getSSLCertificatePath() {
+        return $this->SSLCertificatePath;
+    }
+    
+    /**
+     * Set $SSLCertificatePath attribute
+     * @param string $path SSL certification file path
+     */
+    public function setSSLCertificatePath( $path ) {
+        $this->SSLCertificatePath = $path;
+    }	
 
 }
 
